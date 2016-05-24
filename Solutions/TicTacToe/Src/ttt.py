@@ -18,6 +18,9 @@ def check_input():
         sys.exit()
 
 def line_intersection(line1, line2):
+    """
+    Given two points for each of two lines, get me an intersection point
+    """
     x1 = line1[0][0]
     y1 = line1[0][1]
     x2 = line1[1][0]
@@ -33,6 +36,10 @@ def line_intersection(line1, line2):
     return (x, y)
 
 def get_positions(intersections):
+    """
+    Given 4 points, return me top left, top right, bottom left, bottom right
+    """
+
     vertical = sorted(intersections, key=lambda tup: tup[1])
     horizontal = sorted(intersections, key=lambda tup: tup[0], reverse = True)
 
@@ -49,6 +56,9 @@ def get_positions(intersections):
     return (topLeft, topRight, bottomLeft, bottomRight)
 
 def parse_lines(houghLines):
+    """
+    Reads hough lines, removes duplicates, extracts intersections
+    """
     lines = []
     intersections = []
 
@@ -98,7 +108,7 @@ def recognize_symbol(img):
             
         for intersection in intersections:
             #cv2.circle(img, intersection, 3, (0,255,0), 5)
-            # Check if intersection is somewhere in the middle, if it is we have a X:
+            # Check if intersection is somewhere in the middle of ROI, if it is we have an X:
             x = intersection[0]
             y = intersection[1]
             height, width = img.shape[:2]
@@ -107,6 +117,8 @@ def recognize_symbol(img):
 
     #cv2.imshow('houghlines3.jpg', img)
     #cv2.waitKey(0)
+
+    # Nothing found, return '-'
     return '-'
 
 def store_to_file(content, output_file):
@@ -139,32 +151,38 @@ outputTextPath = sys.argv[2]
 file_list = [x for x in os.listdir(inputImagePath) if x.endswith(".bmp")]
 
 for filename in file_list:
-    filepath = inputImagePath + "\{0}".format(filename)
-    img = cv2.imread(filepath)
-    gray = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
-    edges = cv2.Canny(image = gray, threshold1 = 50, threshold2 = 150, apertureSize = 3)
+    try:
+        filepath = inputImagePath + "\{0}".format(filename)
+        img = cv2.imread(filepath)
+        gray = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
+        edges = cv2.Canny(image = gray, threshold1 = 50, threshold2 = 150, apertureSize = 3)
 
-    houghLines = cv2.HoughLines(image = edges, rho = 1, theta = np.pi/180, threshold = 90)
+        houghLines = cv2.HoughLines(image = edges, rho = 1, theta = np.pi/180, threshold = 90)
 
-    lines, intersections = parse_lines(houghLines)
+        # Get lines and intersections
+        lines, intersections = parse_lines(houghLines)
 
-    topLeft, topRight, bottomLeft, bottomRight = get_positions(intersections)
+        # Filter 4 main positions (intersections)
+        topLeft, topRight, bottomLeft, bottomRight = get_positions(intersections)
     
-    topLeftROI = img[0:topLeft[1], 0:topLeft[0]]
-    topMiddleROI = img[0:(topLeft[1] + topRight[1])/2, topLeft[0]:topRight[0]]
-    topRightROI = img[0:topRight[1], topRight[0]:255]
+        # Get ROIs (9 total) extracted from 4 main points (intersections)
+        topLeftROI = img[0:topLeft[1], 0:topLeft[0]]
+        topMiddleROI = img[0:(topLeft[1] + topRight[1])/2, topLeft[0]:topRight[0]]
+        topRightROI = img[0:topRight[1], topRight[0]:255]
 
-    centerLeftROI = img[topLeft[1]:bottomLeft[1], 0:(topLeft[0] + bottomLeft[0])/2]
-    centerMiddleROI = img[(topLeft[1] + topRight[1])/2 : (bottomLeft[1] + bottomRight[1])/2, (topLeft[0] + bottomLeft[0])/2 : (topRight[0] + bottomRight[0])/2]
-    centerRightROI = img[topRight[1]:bottomRight[1], (topRight[0] + bottomRight[0])/2 : 255]
+        centerLeftROI = img[topLeft[1]:bottomLeft[1], 0:(topLeft[0] + bottomLeft[0])/2]
+        centerMiddleROI = img[(topLeft[1] + topRight[1])/2 : (bottomLeft[1] + bottomRight[1])/2, (topLeft[0] + bottomLeft[0])/2 : (topRight[0] + bottomRight[0])/2]
+        centerRightROI = img[topRight[1]:bottomRight[1], (topRight[0] + bottomRight[0])/2 : 255]
 
-    bottomLeftROI = img[bottomLeft[1]:255, 0:bottomLeft[0]]
-    bottomMiddleROI = img[(bottomLeft[1] + bottomRight[1])/2 : 255, bottomLeft[0]:bottomRight[0]]
-    bottomRightROI = img[bottomRight[1]:255, bottomRight[0]:255]
+        bottomLeftROI = img[bottomLeft[1]:255, 0:bottomLeft[0]]
+        bottomMiddleROI = img[(bottomLeft[1] + bottomRight[1])/2 : 255, bottomLeft[0]:bottomRight[0]]
+        bottomRightROI = img[bottomRight[1]:255, bottomRight[0]:255]
 
-    result = "{0}{1}{2}{3}{4}{5}{6}{7}{8}{9}{10}".format(recognize_symbol(topLeftROI), recognize_symbol(topMiddleROI), recognize_symbol(topRightROI), os.linesep, recognize_symbol(centerLeftROI), recognize_symbol(centerMiddleROI), recognize_symbol(centerRightROI), os.linesep, recognize_symbol(bottomLeftROI), recognize_symbol(bottomMiddleROI), recognize_symbol(bottomRightROI))
+        result = "{0}{1}{2}{3}{4}{5}{6}{7}{8}{9}{10}".format(recognize_symbol(topLeftROI), recognize_symbol(topMiddleROI), recognize_symbol(topRightROI), os.linesep, recognize_symbol(centerLeftROI), recognize_symbol(centerMiddleROI), recognize_symbol(centerRightROI), os.linesep, recognize_symbol(bottomLeftROI), recognize_symbol(bottomMiddleROI), recognize_symbol(bottomRightROI))
 
-    output_filename = filename.replace("bmp", "txt")
-    store_to_file(result, outputTextPath + "\{0}".format(output_filename))
+        output_filename = filename.replace("bmp", "txt")
+        store_to_file(result, outputTextPath + "\{0}".format(output_filename))
+    except Exception:
+        pass
 
 #cv2.destroyAllWindows()  

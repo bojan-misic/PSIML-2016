@@ -43,6 +43,11 @@ namespace Histogram
                 }
             }
 
+            if (histogram.IsEmpty())
+            {
+                return;
+            }
+
             string globalCsv = histogram.ToCsv();
             string matchingCsv = histogram.toCsvScaled(100);
 

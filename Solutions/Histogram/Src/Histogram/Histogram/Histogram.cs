@@ -122,13 +122,16 @@ namespace Histogram
 
         private Dictionary<byte, uint> getScaledHistogram(uint size)
         {
-            uint ratio = size * size / numberOfPixels;
             var scaledHistogram = new Dictionary<byte, uint>(histogram);
-
-            for (byte i = 0; ; i++)
+            if (numberOfPixels > 0)
             {
-                scaledHistogram[i] = scaledHistogram[i] * ratio;
-                if (i == 255) break;
+                uint ratio = size * size / numberOfPixels;
+
+                for (byte i = 0; ; i++)
+                {
+                    scaledHistogram[i] = scaledHistogram[i] * ratio;
+                    if (i == 255) break;
+                }
             }
 
             return scaledHistogram;
@@ -162,6 +165,11 @@ namespace Histogram
         public string toCsvScaled(uint size)
         {
             return toString(getScaledHistogram(size));
+        }
+
+        public bool IsEmpty()
+        {
+            return histogram.Count == 0;
         }
     }
 }
