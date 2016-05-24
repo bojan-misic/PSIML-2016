@@ -22,7 +22,7 @@ def load_file(input_file):
 
     output = ''
     with open(input_file, 'r') as f:
-        output = f.read().replace(os.linesep, '')
+        output = f.read().replace(os.linesep, '').replace('\n', '').replace('\r\n', '')
     
     return output
 
